@@ -1,0 +1,14 @@
+Armando Miraglia <arma@lamortenera.it>, 19 July 2011
+
+
+About:
+Regression test suite for SimCList -- http://mij.oltrelinux.com/devel/simclist/
+
+License:
+See LICENSE file.
+
+Compile instructions:
+Enter the SimCList source root first. Compile SimCList into an object file
+(e.g.: "cc -c simclist.c"). Descend into the regrtest directory and issue
+"make" to compile the test suite.
+To run tests, enter any tierN directory and execute the respective test binary.
