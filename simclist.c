@@ -270,7 +270,13 @@ int list_init(list_t *restrict l) {
 
     /* head/tail sentinels and mid pointer */
     l->head_sentinel = (struct list_entry_s *)malloc(sizeof(struct list_entry_s));
+    if (l->head_sentinel == NULL) { /* sanity check for malloc() failure */
+    	return -1;
+	}
     l->tail_sentinel = (struct list_entry_s *)malloc(sizeof(struct list_entry_s));
+	if (l->tail_sentinal == NULL) { /* sanity check for malloc() failure */
+		return -1;
+	}
     l->head_sentinel->next = l->tail_sentinel;
     l->tail_sentinel->prev = l->head_sentinel;
     l->head_sentinel->prev = l->tail_sentinel->next = l->mid = NULL;
@@ -283,6 +289,8 @@ int list_init(list_t *restrict l) {
 
     /* free-list attributes */
     l->spareels = (struct list_entry_s **)malloc(SIMCLIST_MAX_SPARE_ELEMS * sizeof(struct list_entry_s *));
+	if (l->spareels == NULL) /* sanity check for malloc() failure */
+		return -1;
     l->spareelsnum = 0;
 
 #ifdef SIMCLIST_WITH_THREADS
@@ -493,6 +501,9 @@ int list_insert_at(list_t *restrict l, const void *data, unsigned int pos) {
         /* make room for user' data (has to be copied) */
         size_t datalen = l->attrs.meter(data);
         lent->data = (struct list_entry_s *)malloc(datalen);
+		/* sanity check for malloc() failure */
+		if (lent->data == NULL)
+			return -1;
         memcpy(lent->data, data, datalen);
     } else {
         lent->data = (void*)data;
@@ -730,6 +741,9 @@ int list_concat(const list_t *l1, const list_t *l2, list_t *restrict dest) {
     el = dest->head_sentinel;
     while (srcel != l1->tail_sentinel) {
         el->next = (struct list_entry_s *)malloc(sizeof(struct list_entry_s));
+		/* sanity check for malloc() failure */
+		if (el->next == NULL)
+			return -1;
         el->next->prev = el;
         el = el->next;
         el->data = srcel->data;
@@ -740,6 +754,9 @@ int list_concat(const list_t *l1, const list_t *l2, list_t *restrict dest) {
     srcel = l2->head_sentinel->next;
     while (srcel != l2->tail_sentinel) {
         el->next = (struct list_entry_s *)malloc(sizeof(struct list_entry_s));
+		/* sanity check for malloc() failure */
+		if (el->next == NULL)
+			return -1;
         el->next->prev = el;
         el = el->next;
         el->data = srcel->data;
@@ -907,6 +924,10 @@ static void list_sort_quicksort(list_t *restrict l, int versus,
         /* prepare wrapped args, then start thread */
         if (l->threadcount < SIMCLIST_MAXTHREADS-1) {
             struct list_sort_wrappedparams *wp = (struct list_sort_wrappedparams *)malloc(sizeof(struct list_sort_wrappedparams));
+			/* sanity check for malloc() failure */
+			if (wp == NULL) {
+				return;	/* do we need to add a warning message here? */
+			}
             l->threadcount++;
             traised = 1;
             wp->l = l;
@@ -1281,6 +1302,10 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
         if (l->attrs.unserializer != NULL) {
             /* use unserializer */
             buf = malloc(header.elemlen);
+			if (buf == NULL) { /* sanity check for malloc() failure */
+				errno =  ENOMEM;
+				return -1;
+			}
             for (cnt = 0; cnt < header.numels; cnt++) {
                 READ_ERRCHECK(fd, buf, header.elemlen);
                 list_append(l, l->attrs.unserializer(buf, & elsize));
@@ -1290,6 +1315,10 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
             /* copy verbatim into memory */
             for (cnt = 0; cnt < header.numels; cnt++) {
                 buf = malloc(header.elemlen);
+				if (buf == NULL) /* sanity check for malloc() failure */
+					errno = ENOMEM;
+					return -1;
+				}
                 READ_ERRCHECK(fd, buf, header.elemlen);
                 list_append(l, buf);
             }
@@ -1303,6 +1332,10 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
             for (cnt = 0; cnt < header.numels; cnt++) {
                 READ_ERRCHECK(fd, & elsize, sizeof(elsize));
                 buf = malloc((size_t)elsize);
+				if (buf == NULL) { /* sanity check for malloc() failure */
+					errno = ENOMEM;
+					return -1;
+				}
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
                 list_append(l, l->attrs.unserializer(buf, & elsize));
@@ -1313,6 +1346,10 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
             for (cnt = 0; cnt < header.numels; cnt++) {
                 READ_ERRCHECK(fd, & elsize, sizeof(elsize));
                 buf = malloc(elsize);
+				if (buf == NULL) { /* sanity check for malloc() failure */
+					errno = ENOMEM;
+					return -1;
+				}
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
                 list_append(l, buf);
