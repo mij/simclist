@@ -1292,6 +1292,8 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 buf = malloc(header.elemlen);
                 READ_ERRCHECK(fd, buf, header.elemlen);
                 list_append(l, buf);
+                if (l->attrs.copy_data)
+                    free(buf);
             }
             totmemorylen = header.numels * header.elemlen;
         }
@@ -1316,6 +1318,8 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
                 list_append(l, buf);
+                if (l->attrs.copy_data)
+                    free(buf);
             }
             totmemorylen = totreadlen;
         }
