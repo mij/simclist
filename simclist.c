@@ -1187,6 +1187,10 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
                         header.elemlen = 0;
                         header.totlistlen = 0;
                         x = l->head_sentinel;
+                        if (lseek(fd, SIMCLIST_DUMPFORMAT_HEADERLEN, SEEK_SET) < 0) {
+                            /* errno set by lseek() */
+                            return -1;
+                        }
                         /* restart from the beginning */
                         continue;
                     }
