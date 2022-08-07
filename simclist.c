@@ -1194,6 +1194,10 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
                         header.elemlen = 0;
                         header.totlistlen = 0;
                         x = l->head_sentinel;
+                        if (lseek(fd, SIMCLIST_DUMPFORMAT_HEADERLEN, SEEK_SET) < 0) {
+                            /* errno set by lseek() */
+                            return -1;
+                        }
                         /* restart from the beginning */
                         continue;
                     }
@@ -1301,6 +1305,8 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 if (buf == NULL) return -1;
                 READ_ERRCHECK(fd, buf, header.elemlen);
                 list_append(l, buf);
+                if (l->attrs.copy_data)
+                    free(buf);
             }
             totmemorylen = header.numels * header.elemlen;
         }
@@ -1327,6 +1333,8 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
                 list_append(l, buf);
+                if (l->attrs.copy_data)
+                    free(buf);
             }
             totmemorylen = totreadlen;
         }
