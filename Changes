@@ -1,3 +1,6 @@
+* 1.6.1 Aug 2022
+    - Return explicit error in case machine is unable to allocate memory (Credit @dogbert2) 
+
 * 1.6   Oct 2011
     - complete Windows/Visual Studio compatibility (thanks Martin Paljak, Ludovic Rousseau, Viktor Tarasov)
     - fix crash when list_delete_range() is used to clear the entire list (thanks Armando Miraglia)
