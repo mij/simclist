@@ -5,6 +5,7 @@ all: tier3_tests
 tier3_tests: tier3_tests.c \
 						 tier3_testa.c \
 						 tier3_testb.c \
+						 tier3_testc.c \
 						 ../lib/random.o \
 						 ../lib/helpers.o \
 						 ../../simclist.o

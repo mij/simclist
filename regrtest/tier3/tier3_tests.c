@@ -7,10 +7,11 @@
 
 #include "tier3_testa.h"
 #include "tier3_testb.h"
+#include "tier3_testc.h"
 
 int main(void) {
   // ----------------
-  // Tier2 A checking
+  // Tier3 A checking
   // ----------------
   testa_check(0);
   testa_check(1);
@@ -19,13 +20,18 @@ int main(void) {
   testa_check(1000);
 
   // ----------------
-  // Tier2 B checking
+  // Tier3 B checking
   // ----------------
   testb_check(0);
   testb_check(1);
   testb_check(3);
   testb_check(10);
   testb_check(100);
+
+  // ----------------
+  // Tier3 B checking
+  // ----------------
+  testc_check();
 
   return 0;
 }
