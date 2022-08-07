@@ -7,7 +7,6 @@
 
 #include "tier3_testa.h"
 #include "tier3_testb.h"
-#include "tier3_testc.h"
 
 int main(void) {
   // ----------------
@@ -27,11 +26,6 @@ int main(void) {
   testb_check(3);
   testb_check(10);
   testb_check(100);
-
-  // ----------------
-  // Tier3 B checking
-  // ----------------
-  testc_check();
 
   return 0;
 }

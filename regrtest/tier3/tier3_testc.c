@@ -1,8 +1,19 @@
+/*
+ * @file   tier3_testc.c
+ * @author @domoslabs at GitHub
+ * @date   Nov 1, 2021
+ * @brief  Test for leaks in list_dump_file() and list_restore_file().
+ * 
+ * Use as follows (requires valgrind):
+ * 
+ * make tier3_testc
+ * LD_LIBRARY_PATH=. valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./tier3_testc
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "../../simclist.h"
-#include "tier3_testc.h"
 
 
 struct my_type {
@@ -47,7 +58,7 @@ void save_and_restore_list() {
     list_destroy(&restored_list);
 }
 
-int testc_check() {
+int main(int argc, char *argv[]) {
     save_and_restore_list();
     save_and_restore_list();
     return 0;
