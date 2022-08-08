@@ -13,4 +13,4 @@ tier3_testc: tier3_testc.c \
 						 ../../simclist.o
 
 clean:
-	find . -name tier3_tests -delete
+	rm -f tier3_tests tier3_testc
