@@ -6,6 +6,8 @@
 
 `SimCList` is a high quality C library (and C++ embeddable) for handling lists. It exploits several advanced techniques for improving performance, including freelists, sentinels, automatic sort algorithm selection, sort randomization, mid pointer, and optional multithreading. The API is simple but powerful, makes elegant and consistent use of information hiding, abstracts the actual data type to store, and is fairly complete. The library itself makes a good compromise between performance in terms of time and space, and is well documented.
 
+SimCList is used projects ranging from [Intrusion Detection](https://sshguard.net), to [device drivers](https://opensource.apple.com/source/SmartcardCCID/) and [simulation](https://www.nrel.gov/wind/nwtc/openfast.html).
+
 ## Features
 
 - iteration
@@ -171,13 +173,17 @@ cmake .         # creates the Makefile for your platform
 make            # compiles SimClist into a dynamic library for your platform
 ```
 
-# API DOCUMENTATION
+# API Documentation
 
-Use [doxygen](https://www.doxygen.nl) to build SimCList's doc. A Doxyfile configuration for doxygen is
-already available in the package.
+## Online
 
-This will build HTML documentation, in the English language, in doc/:
+See [SimCList API refere](http://mij.oltrelinux.com/devel/simclist/apidoc/d3/d68/simclist_8h.html).
+
+## Locally
+
+Build a local copy of SimCList's documentation with [doxygen](https://www.doxygen.nl):
 
 ```bash
-doxygen
+cd simclist/
+doxygen         # creates files in doc/html/
 ```
