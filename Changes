@@ -1,3 +1,6 @@
+* 1.6.3 Aug 2022
+    - Fix potential crash on systems lacking float NaN for a division by 0
+
 * 1.6.2 Aug 2022
     - Fix leak in list_dump_file and list_restore_file (Credit @domoslabs and @hansdals)
 
