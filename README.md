@@ -1,6 +1,6 @@
 | Version | License | Website | LicenseContact | 
 | - | - | - | - |
-| 1.6.2 | [BSD revised](http://www.opensource.org/licenses/bsd-license.php) | http://mij.oltrelinux.com/devel/simclist/ | mij@sshguard.net |
+| 1.6.3 | [BSD revised](http://www.opensource.org/licenses/bsd-license.php) | http://mij.oltrelinux.com/devel/simclist/ | mij@sshguard.net |
 
 # Overview of SimCList
 
