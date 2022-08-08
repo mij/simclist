@@ -1243,6 +1243,7 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
     struct list_dump_header_s header;
     unsigned long cnt;
     void *buf;
+    void *unserialized_element;
     uint32_t elsize, totreadlen, totmemorylen;
 
     memset(& header, 0, sizeof(header));
@@ -1295,9 +1296,14 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
             if (buf == NULL) return -1;
             for (cnt = 0; cnt < header.numels; cnt++) {
                 READ_ERRCHECK(fd, buf, header.elemlen);
-                list_append(l, l->attrs.unserializer(buf, & elsize));
+                /* unserializer allocates buffer for new element and returns it */
+                unserialized_element = l->attrs.unserializer(buf, & elsize);
+                list_append(l, unserialized_element);
+                if (l->attrs.copy_data)
+                    free(unserialized_element);
                 totmemorylen += elsize;
             }
+            free(buf);
         } else {
             /* copy verbatim into memory */
             for (cnt = 0; cnt < header.numels; cnt++) {
@@ -1321,7 +1327,10 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 if (buf == NULL) return -1;
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
-                list_append(l, l->attrs.unserializer(buf, & elsize));
+                unserialized_element = l->attrs.unserializer(buf, & elsize);
+                list_append(l, unserialized_element);
+                if (l->attrs.copy_data)
+                    free(unserialized_element);
                 totmemorylen += elsize;
             }
         } else {
