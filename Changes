@@ -1,3 +1,6 @@
+* 1.6.2 Aug 2022
+    - Fix leak in list_dump_file and list_restore_file (Credit @domoslabs and @hansdals)
+
 * 1.6.1 Aug 2022
     - Return explicit error in case machine is unable to allocate memory (Credit @dogbert2) 
 

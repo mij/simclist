@@ -1164,13 +1164,13 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
                         free(ser_buf);
                         /* constant element length speculation broken! */
                         header.elemlen = 0;
+                        /* restart from the beginning */
                         header.totlistlen = 0;
                         x = l->head_sentinel;
                         if (lseek(fd, SIMCLIST_DUMPFORMAT_HEADERLEN, SEEK_SET) < 0) {
                             /* errno set by lseek() */
                             return -1;
                         }
-                        /* restart from the beginning */
                         continue;
                     }
                     /* speculation confirmed */
@@ -1194,6 +1194,10 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
                         header.elemlen = 0;
                         header.totlistlen = 0;
                         x = l->head_sentinel;
+                        if (lseek(fd, SIMCLIST_DUMPFORMAT_HEADERLEN, SEEK_SET) < 0) {
+                            /* errno set by lseek() */
+                            return -1;
+                        }
                         /* restart from the beginning */
                         continue;
                     }
@@ -1239,6 +1243,7 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
     struct list_dump_header_s header;
     unsigned long cnt;
     void *buf;
+    void *unserialized_element;
     uint32_t elsize, totreadlen, totmemorylen;
 
     memset(& header, 0, sizeof(header));
@@ -1291,9 +1296,14 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
             if (buf == NULL) return -1;
             for (cnt = 0; cnt < header.numels; cnt++) {
                 READ_ERRCHECK(fd, buf, header.elemlen);
-                list_append(l, l->attrs.unserializer(buf, & elsize));
+                /* unserializer allocates buffer for new element and returns it */
+                unserialized_element = l->attrs.unserializer(buf, & elsize);
+                list_append(l, unserialized_element);
+                if (l->attrs.copy_data)
+                    free(unserialized_element);
                 totmemorylen += elsize;
             }
+            free(buf);
         } else {
             /* copy verbatim into memory */
             for (cnt = 0; cnt < header.numels; cnt++) {
@@ -1301,6 +1311,8 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 if (buf == NULL) return -1;
                 READ_ERRCHECK(fd, buf, header.elemlen);
                 list_append(l, buf);
+                if (l->attrs.copy_data)
+                    free(buf);
             }
             totmemorylen = header.numels * header.elemlen;
         }
@@ -1315,7 +1327,10 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 if (buf == NULL) return -1;
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
-                list_append(l, l->attrs.unserializer(buf, & elsize));
+                unserialized_element = l->attrs.unserializer(buf, & elsize);
+                list_append(l, unserialized_element);
+                if (l->attrs.copy_data)
+                    free(unserialized_element);
                 totmemorylen += elsize;
             }
         } else {
@@ -1327,6 +1342,8 @@ int list_restore_filedescriptor(list_t *restrict l, int fd, size_t *restrict len
                 READ_ERRCHECK(fd, buf, elsize);
                 totreadlen += elsize;
                 list_append(l, buf);
+                if (l->attrs.copy_data)
+                    free(buf);
             }
             totmemorylen = totreadlen;
         }

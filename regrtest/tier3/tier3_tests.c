@@ -10,7 +10,7 @@
 
 int main(void) {
   // ----------------
-  // Tier2 A checking
+  // Tier3 A checking
   // ----------------
   testa_check(0);
   testa_check(1);
@@ -19,7 +19,7 @@ int main(void) {
   testa_check(1000);
 
   // ----------------
-  // Tier2 B checking
+  // Tier3 B checking
   // ----------------
   testb_check(0);
   testb_check(1);
