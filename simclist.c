@@ -264,6 +264,8 @@ static inline long get_random(void) {
 int list_init(list_t *restrict l) {
     if (l == NULL) return -1;
 
+    memset(l, 0, sizeof *l);
+
     seed_random();
 
     l->numels = 0;
@@ -292,7 +294,8 @@ int list_init(list_t *restrict l) {
     l->threadcount = 0;
 #endif
 
-    list_attributes_setdefaults(l);
+    if (list_attributes_setdefaults(l))
+        return -1;
 
     assert(list_repOk(l));
     assert(list_attrOk(l));
@@ -438,6 +441,9 @@ static inline struct list_entry_s *list_findpos(const list_t *restrict l, int po
     float x;
     int i;
 
+    if (NULL == l->head_sentinel || NULL == l->tail_sentinel)
+        return NULL;
+
     /* accept 1 slot overflow for fetching head and tail sentinels */
     if (posstart < -1 || posstart > (int)l->numels) return NULL;
 
@@ -466,6 +472,9 @@ void *list_extract_at(list_t *restrict l, unsigned int pos) {
     if (l->iter_active || pos >= l->numels) return NULL;
 
     tmp = list_findpos(l, pos);
+    if (NULL == tmp)
+        return NULL;
+
     data = tmp->data;
 
     tmp->data = NULL;   /* save data from list_drop_elem() free() */
@@ -496,7 +505,11 @@ int list_insert_at(list_t *restrict l, const void *data, unsigned int pos) {
         /* make room for user' data (has to be copied) */
         size_t datalen = l->attrs.meter(data);
         lent->data = (struct list_entry_s *)malloc(datalen);
-        if (lent->data == NULL) return -1;
+        if (lent->data == NULL)
+        {
+            free(lent);
+            return -1;
+        }
         memcpy(lent->data, data, datalen);
     } else {
         lent->data = (void*)data;
@@ -504,6 +517,12 @@ int list_insert_at(list_t *restrict l, const void *data, unsigned int pos) {
 
     /* actually append element */
     prec = list_findpos(l, pos-1);
+    if (NULL == prec)
+    {
+        free(lent->data);
+        free(lent);
+        return -1;
+    }
     succ = prec->next;
 
     prec->next = lent;
@@ -633,34 +652,36 @@ int list_clear(list_t *restrict l) {
 
     if (l->iter_active) return -1;
 
-    if (l->attrs.copy_data) {        /* also free user data */
-        /* spare a loop conditional with two loops: spareing elems and freeing elems */
-        for (s = l->head_sentinel->next; l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS && s != l->tail_sentinel; s = s->next) {
-            /* move elements as spares as long as there is room */
-            if (s->data != NULL) free(s->data);
-            l->spareels[l->spareelsnum++] = s;
+    if (l->head_sentinel && l->tail_sentinel) {
+        if (l->attrs.copy_data) {        /* also free user data */
+            /* spare a loop conditional with two loops: spareing elems and freeing elems */
+            for (s = l->head_sentinel->next; l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS && s != l->tail_sentinel; s = s->next) {
+                /* move elements as spares as long as there is room */
+                if (s->data != NULL) free(s->data);
+                l->spareels[l->spareelsnum++] = s;
+            }
+            while (s != l->tail_sentinel) {
+                /* free the remaining elems */
+                if (s->data != NULL) free(s->data);
+                s = s->next;
+                free(s->prev);
+            }
+            l->head_sentinel->next = l->tail_sentinel;
+            l->tail_sentinel->prev = l->head_sentinel;
+        } else { /* only free element containers */
+            /* spare a loop conditional with two loops: spareing elems and freeing elems */
+            for (s = l->head_sentinel->next; l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS && s != l->tail_sentinel; s = s->next) {
+                /* move elements as spares as long as there is room */
+                l->spareels[l->spareelsnum++] = s;
+            }
+            while (s != l->tail_sentinel) {
+                /* free the remaining elems */
+                s = s->next;
+                free(s->prev);
+            }
+            l->head_sentinel->next = l->tail_sentinel;
+            l->tail_sentinel->prev = l->head_sentinel;
         }
-        while (s != l->tail_sentinel) {
-            /* free the remaining elems */
-            if (s->data != NULL) free(s->data);
-            s = s->next;
-            free(s->prev);
-        }
-        l->head_sentinel->next = l->tail_sentinel;
-        l->tail_sentinel->prev = l->head_sentinel;
-    } else { /* only free element containers */
-        /* spare a loop conditional with two loops: spareing elems and freeing elems */
-        for (s = l->head_sentinel->next; l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS && s != l->tail_sentinel; s = s->next) {
-            /* move elements as spares as long as there is room */
-            l->spareels[l->spareelsnum++] = s;
-        }
-        while (s != l->tail_sentinel) {
-            /* free the remaining elems */
-            s = s->next;
-            free(s->prev);
-        }
-        l->head_sentinel->next = l->tail_sentinel;
-        l->tail_sentinel->prev = l->head_sentinel;
     }
     l->numels = 0;
     l->mid = NULL;
@@ -681,6 +702,9 @@ int list_empty(const list_t *restrict l) {
 int list_locate(const list_t *restrict l, const void *data) {
     struct list_entry_s *el;
     int pos = 0;
+
+    if (NULL == l->head_sentinel || NULL == l->tail_sentinel)
+        return -1;
 
     if (l->attrs.comparator != NULL) {
         /* use comparator */
@@ -703,6 +727,9 @@ void *list_seek(list_t *restrict l, const void *indicator) {
 
     if (l->attrs.seeker == NULL) return NULL;
 
+    if (NULL == l->head_sentinel || NULL == l->tail_sentinel)
+        return NULL;
+
     for (iter = l->head_sentinel->next; iter != l->tail_sentinel; iter = iter->next) {
         if (l->attrs.seeker(iter->data, indicator) != 0) return iter->data;
     }
@@ -723,7 +750,12 @@ int list_concat(const list_t *l1, const list_t *l2, list_t *restrict dest) {
     if (l1 == NULL || l2 == NULL || dest == NULL || l1 == dest || l2 == dest)
         return -1;
 
-    list_init(dest);
+    if (NULL == l1->head_sentinel || NULL == l1->tail_sentinel
+        || NULL == l2->head_sentinel || NULL == l2->tail_sentinel)
+        return -1;
+
+    if (list_init(dest))
+        return -1;
 
     dest->numels = l1->numels + l2->numels;
     if (dest->numels == 0)
@@ -775,6 +807,10 @@ int list_sort(list_t *restrict l, int versus) {
 
     if (l->numels <= 1)
         return 0;
+
+    if (NULL == l->head_sentinel || NULL == l->tail_sentinel)
+        return -1;
+
     list_sort_quicksort(l, versus, 0, l->head_sentinel->next, l->numels-1, l->tail_sentinel->prev);
     assert(list_repOk(l));
     return 0;
@@ -944,6 +980,8 @@ static void list_sort_quicksort(list_t *restrict l, int versus,
 
 int list_iterator_start(list_t *restrict l) {
     if (l->iter_active) return 0;
+    if (NULL == l->head_sentinel)
+        return -1;
     l->iter_pos = 0;
     l->iter_active = 1;
     l->iter_curentry = l->head_sentinel->next;
@@ -1432,7 +1470,7 @@ static int list_drop_elem(list_t *restrict l, struct list_entry_s *tmp, unsigned
     if (l->attrs.copy_data && tmp->data != NULL)
         free(tmp->data);
 
-    if (l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS) {
+    if (l->spareels != NULL && l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS) {
         l->spareels[l->spareelsnum++] = tmp;
     } else {
         free(tmp);
