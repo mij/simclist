@@ -166,7 +166,7 @@ typedef INT64   int64_t;
 #include "simclist.h"
 
 
-/* minumum number of elements for sorting with quicksort instead of insertion */
+/* minimum number of elements for sorting with quicksort instead of insertion */
 #define SIMCLIST_MINQUICKSORTELS        24
 
 
@@ -634,7 +634,7 @@ int list_clear(list_t *restrict l) {
     if (l->iter_active) return -1;
 
     if (l->attrs.copy_data) {        /* also free user data */
-        /* spare a loop conditional with two loops: spareing elems and freeing elems */
+        /* spare a loop conditional with two loops: sparing elems and freeing elems */
         for (s = l->head_sentinel->next; l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS && s != l->tail_sentinel; s = s->next) {
             /* move elements as spares as long as there is room */
             if (s->data != NULL) free(s->data);
@@ -649,7 +649,7 @@ int list_clear(list_t *restrict l) {
         l->head_sentinel->next = l->tail_sentinel;
         l->tail_sentinel->prev = l->head_sentinel;
     } else { /* only free element containers */
-        /* spare a loop conditional with two loops: spareing elems and freeing elems */
+        /* spare a loop conditional with two loops: sparing elems and freeing elems */
         for (s = l->head_sentinel->next; l->spareelsnum < SIMCLIST_MAX_SPARE_ELEMS && s != l->tail_sentinel; s = s->next) {
             /* move elements as spares as long as there is room */
             l->spareels[l->spareelsnum++] = s;
