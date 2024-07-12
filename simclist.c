@@ -1093,6 +1093,7 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
     uint32_t bufsize;
     struct timeval timeofday;
     struct list_dump_header_s header;
+    size_t extra_bytes = 0;
 
     if (l->attrs.meter == NULL && l->attrs.serializer == NULL) {
         errno = ENOTTY;
@@ -1177,6 +1178,7 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
                     WRITE_ERRCHECK(fd, ser_buf, bufsize);
                 } else {                        /* speculation found broken */
                     WRITE_ERRCHECK(fd, & bufsize, sizeof(bufsize));
+                    extra_bytes += sizeof(bufsize);
                     WRITE_ERRCHECK(fd, ser_buf, bufsize);
                 }
                 free(ser_buf);
@@ -1204,6 +1206,7 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
                     WRITE_ERRCHECK(fd, x->data, bufsize);
                 } else {
                     WRITE_ERRCHECK(fd, &bufsize, sizeof(bufsize));
+                    extra_bytes += sizeof(bufsize);
                     WRITE_ERRCHECK(fd, x->data, bufsize);
                 }
             }
@@ -1215,6 +1218,7 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
 
     /* write random terminator */
     WRITE_ERRCHECK(fd, & header.rndterm, sizeof(header.rndterm));        /* list terminator */
+    extra_bytes += sizeof(header.rndterm);
 
 
     /* write header */
@@ -1233,7 +1237,8 @@ int list_dump_filedescriptor(const list_t *restrict l, int fd, size_t *restrict 
 
     /* possibly store total written length in "len" */
     if (len != NULL) {
-        *len = sizeof(header) + ntohl(header.totlistlen);
+        /* don't use sizeof(header) since it may be padded. sizeof(header) can be different than the sum of each element's type. */
+        *len = SIMCLIST_DUMPFORMAT_HEADERLEN + ntohl(header.totlistlen) + extra_bytes;
     }
 
     return 0;
